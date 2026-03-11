@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Post Search - NEXUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="locations.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .financial-chip:has(input:checked) { background-color: #003DA5; color: white; border-color: #003DA5; }
+        .transaction-chip:has(input:checked) { background-color: #003DA5; color: white; }
+        .field-error { border: 2px solid #ef4444 !important; }
+        .compact-input { padding: 16px 14px; font-size: 15px; border-radius: 16px; }
+        select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.7rem center; background-size: 1.25em; }
+        select:disabled { opacity: 0.4; background-color: #f8fafc; cursor: not-allowed; }
+        .animate-fade { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans h-screen flex flex-col text-slate-800">
+
+    <nav class="bg-white border-b px-4 py-3 flex items-center justify-between shadow-sm shrink-0">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="text-slate-400"><i class="fa-solid fa-arrow-left text-xl"></i></a>
+            <div class="flex flex-col items-start gap-0">
+                <h1 class="font-black text-2xl text-[#003DA5] tracking-tighter italic leading-none">NEXUS - SEARCH</h1>
+                <p class="text-xs uppercase tracking-widest text-[#ED1C24] font-bold mt-1">Powered by REMAX Altitud</p>
+            </div>
+        </div>
+        <div class="flex bg-slate-100 p-1 rounded-full text-xs font-black border">
+            <button onclick="setLanguage('en')" id="btn-en" class="px-3 py-1.5 rounded-full bg-[#003DA5] text-white">EN</button>
+            <button onclick="setLanguage('es')" id="btn-es" class="px-3 py-1.5 rounded-full text-slate-400">ES</button>
+        </div>
+    </nav>
+
+    <div class="p-3 flex-1 flex flex-col gap-3 overflow-y-auto no-scrollbar pb-10">
+        
+        <div class="flex bg-slate-200 p-1.5 rounded-2xl shrink-0">
+            <label class="transaction-chip flex-1 text-center py-2.5 rounded-xl text-sm font-black uppercase transition-all cursor-pointer">
+                <input type="radio" name="transType" value="buy" class="hidden"> <span class="lang-en">BUY</span><span class="lang-es hidden">COMPRA</span>
+            </label>
+            <label class="transaction-chip flex-1 text-center py-2.5 rounded-xl text-sm font-black uppercase transition-all cursor-pointer">
+                <input type="radio" name="transType" value="rent" class="hidden"> <span class="lang-en">RENT</span><span class="lang-es hidden">ALQUILER</span>
+            </label>
+        </div>
+        
+        <section class="bg-white p-4 rounded-[28px] border shadow-sm space-y-2">
+            <input type="text" id="clientId" placeholder="Client Name / ID" class="validate compact-input w-full border border-slate-100 bg-slate-50 font-bold outline-none">
+            
+            <div class="grid grid-cols-2 gap-3 mt-3">
+                <select id="propertyType" class="validate compact-input w-full border border-slate-100 bg-slate-50 font-bold outline-none">
+                    <option value="" disabled selected id="opt-prop-placeholder">Prop. Type</option>
+                    <option>House / Villa</option>
+                    <option>Land / Finca</option>
+                    <option>Condo / Apartment</option>
+                    <option>Commercial</option>
+                </select>
+                <select id="timeframe" class="validate compact-input w-full border border-slate-100 bg-slate-50 font-bold outline-none text-[15px]">
+                    <option value="" disabled selected id="opt-time-placeholder">Timeframe</option>
+                    <option data-en="Immediately / ASAP" data-es="Inmediatamente / Lo antes posible">Immediately / ASAP</option>
+                    <option data-en="3-6 Months" data-es="3-6 meses">3-6 Months</option>
+                    <option data-en="More than 6 months" data-es="Más de 6 meses">More than 6 months</option>
+                    <option data-en="I do not know" data-es="No lo sé">I do not know</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <input type="number" id="budgetFrom" placeholder="From ($)" class="validate compact-input w-full border border-slate-100 bg-slate-50 font-bold outline-none">
+                <input type="number" id="budgetTo" placeholder="To ($)" class="validate compact-input w-full border border-slate-100 bg-slate-50 font-bold outline-none">
+            </div>
+        </section>
+
+        <!-- SMART LOCATION AUTOCOMPLETE -->
+        <section class="bg-white p-5 rounded-[28px] border shadow-sm flex flex-col min-h-[160px]">
+            <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest ml-1 mb-3 lang-en">Where are you looking?</h3>
+            <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest ml-1 mb-3 lang-es hidden">¿Dónde buscas?</h3>
+            
+            <div class="flex gap-2 mb-3 relative">
+                <div class="relative flex-1">
+                    <input type="text" id="locationSearch" oninput="showSuggestions(this.value)" autocomplete="off" placeholder="Search area (e.g. Rivas)" class="validate w-full compact-input border border-slate-100 bg-slate-50 font-bold outline-none pl-12">
+                    <i class="fa-solid fa-map-location-dot absolute left-4 top-[1.1rem] text-slate-400 text-lg"></i>
+                </div>
+                <button onclick="addLocation()" type="button" class="bg-[#003DA5] text-white px-6 rounded-2xl font-black text-sm shadow-lg shrink-0 lang-en">ADD</button>
+                <button onclick="addLocation()" type="button" class="bg-[#003DA5] text-white px-6 rounded-2xl font-black text-sm shadow-lg shrink-0 lang-es hidden">AGREGAR</button>
+                
+                <!-- Dropdown suggestions container hidden by default -->
+                <div id="suggestionsBox" class="absolute z-10 w-full left-0 bg-white border border-slate-200 mt-14 max-h-56 overflow-y-auto rounded-xl shadow-lg hidden hidden-scrollbar text-[13px] font-bold text-slate-700"></div>
+            </div>
+            
+            <div id="locationList" class="flex flex-col gap-2"></div>
+        </section>
+
+        <section class="bg-white p-5 rounded-[28px] border shadow-sm space-y-3">
+            <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 lang-en">Exclusivity</h3>
+            <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 lang-es hidden">Exclusividad</h3>
+            
+            <div class="grid grid-cols-3 gap-2">
+                <label class="financial-chip flex flex-col items-center justify-center p-3 border border-slate-100 rounded-[16px] bg-slate-50 transition-all cursor-pointer">
+                    <input type="radio" name="exclusivity" value="open" class="hidden">
+                    <span class="text-[11px] font-black uppercase text-center leading-tight lang-en">Open<br>Search</span>
+                    <span class="text-[11px] font-black uppercase text-center leading-tight lang-es hidden">Búsqueda<br>Abierta</span>
+                </label>
+                <label class="financial-chip flex flex-col items-center justify-center p-3 border border-slate-100 rounded-[16px] bg-slate-50 transition-all cursor-pointer">
+                    <input type="radio" name="exclusivity" value="exclusive" class="hidden">
+                    <span class="text-[11px] font-black uppercase text-center leading-tight lang-en">Exclusive<br>With Me</span>
+                    <span class="text-[11px] font-black uppercase text-center leading-tight lang-es hidden">Exclusivo<br>Conmigo</span>
+                </label>
+                <label class="financial-chip flex flex-col items-center justify-center p-3 border border-slate-100 rounded-[16px] bg-slate-50 transition-all cursor-pointer">
+                    <input type="radio" name="exclusivity" value="idk" class="hidden">
+                    <span class="text-[11px] font-black uppercase text-center leading-tight lang-en">I Don't<br>Know</span>
+                    <span class="text-[11px] font-black uppercase text-center leading-tight lang-es hidden">No lo<br>Sé</span>
+                </label>
+            </div>
+        </section>
+
+        <section class="bg-white p-5 rounded-[28px] border shadow-sm space-y-4">
+            <div class="px-1">
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest lang-en">Purchase Type</h3>
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest lang-es hidden">Tipo de compra</h3>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <label class="financial-chip flex flex-col items-center justify-center p-4 border border-slate-100 rounded-[18px] bg-slate-50 transition-all cursor-pointer">
+                    <input type="radio" name="finance" value="cash" class="hidden">
+                    <span class="text-sm font-black uppercase text-center lang-en">Cash</span>
+                    <span class="text-sm font-black uppercase text-center lang-es hidden">Efectivo</span>
+                </label>
+                <label class="financial-chip flex flex-col items-center justify-center p-4 border border-slate-100 rounded-[18px] bg-slate-50 transition-all cursor-pointer">
+                    <input type="radio" name="finance" value="owner" class="hidden">
+                    <span class="text-sm font-black uppercase text-center leading-tight lang-en">Needs Owner<br>Financing</span>
+                    <span class="text-sm font-black uppercase text-center leading-tight lang-es hidden">Necesita Fin.<br>del Dueño</span>
+                </label>
+                <label class="financial-chip flex flex-col items-center justify-center p-4 border border-slate-100 rounded-[18px] bg-slate-50 transition-all cursor-pointer">
+                    <input type="radio" name="finance" value="mortgage" class="hidden">
+                    <span class="text-sm font-black uppercase text-center leading-tight lang-en">Mortgage<br>Approved</span>
+                    <span class="text-sm font-black uppercase text-center leading-tight lang-es hidden">Hipoteca<br>Aprobada</span>
+                </label>
+                <label class="financial-chip flex flex-col items-center justify-center p-4 border border-slate-100 rounded-[18px] bg-slate-50 transition-all cursor-pointer">
+                    <input type="radio" name="finance" value="other" class="hidden">
+                    <span class="text-sm font-black uppercase text-center lang-en">Other</span>
+                    <span class="text-sm font-black uppercase text-center lang-es hidden">Otro</span>
+                </label>
+                <label class="financial-chip col-span-2 flex flex-col items-center justify-center p-4 border border-slate-100 rounded-[18px] bg-slate-50 transition-all cursor-pointer">
+                    <input type="radio" name="finance" value="idk" class="hidden">
+                    <span class="text-sm font-black uppercase text-center lang-en">I don't know</span>
+                    <span class="text-sm font-black uppercase text-center lang-es hidden">No lo sé</span>
+                </label>
+            </div>
+        </section>
+
+        <section class="bg-white p-5 rounded-[28px] border shadow-sm flex-1 flex flex-col min-h-[160px]">
+            <h3 class="text-sm font-black text-slate-400 uppercase mb-3 tracking-widest lang-en ml-1">Must-Haves</h3>
+            <h3 class="text-sm font-black text-slate-400 uppercase mb-3 tracking-widest lang-es hidden ml-1">Requisitos</h3>
+            <div class="flex gap-2 mb-3">
+                <input type="text" id="mustHaveInput" placeholder="+ Requirement" class="flex-1 compact-input border border-slate-100 bg-slate-50 outline-none">
+                <button onclick="addMustHave()" type="button" class="bg-[#003DA5] text-white px-6 rounded-2xl font-black text-sm shadow-lg lang-en">ADD</button>
+                <button onclick="addMustHave()" type="button" class="bg-[#003DA5] text-white px-6 rounded-2xl font-black text-sm shadow-lg lang-es hidden">AGREGAR</button>
+            </div>
+            <div id="mustHaveList" class="flex flex-col gap-2"></div>
+        </section>
+
+        <button onclick="validateAndPost()" type="button" class="bg-[#ED1C24] text-white py-5 rounded-[24px] font-black text-sm shadow-xl shadow-red-200 uppercase tracking-widest transition-transform active:scale-95 lang-en mt-2">
+            Launch Search
+        </button>
+        <button onclick="validateAndPost()" type="button" class="bg-[#ED1C24] text-white py-5 rounded-[24px] font-black text-sm shadow-xl shadow-red-200 uppercase tracking-widest transition-transform active:scale-95 lang-es hidden mt-2">
+            Lanzar Búsqueda
+        </button>
+
+    </div>
+
+    <!-- SUCCESS MODAL -->
+    <div id="successModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex-col items-center justify-center p-6 backdrop-blur-sm animate-fade">
+        <div class="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center transform transition-all scale-100">
+            <div class="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-6 border-4 border-green-100">
+                <i class="fa-solid fa-check text-5xl"></i>
+            </div>
+            <h2 class="text-3xl font-black text-[#003DA5] mb-3 leading-tight tracking-tighter italic">Congrats!</h2>
+            <p class="text-sm font-bold text-slate-500 mb-8 leading-relaxed lang-en">Your client search is now LIVE! You will find them a property ASAP with <span class="text-[#003DA5] font-black">NEXUS</span>.</p>
+            <p class="text-sm font-bold text-slate-500 mb-8 leading-relaxed lang-es hidden">¡Tu búsqueda está en vivo! Le encontrarás una propiedad lo antes posible con <span class="text-[#003DA5] font-black">NEXUS</span>.</p>
+            
+            <a href="index.html" class="w-full bg-[#003DA5] text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-blue-200 transition-transform active:scale-95 block lang-en">
+                Go back to FEED
+            </a>
+            <a href="index.html" class="w-full bg-[#003DA5] text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-blue-200 transition-transform active:scale-95 block lang-es hidden">
+                Volver al FEED
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA LOAD ---
+        window.onload = function() {
+            // No initialization needed for flat array
+        };
+
+        // --- HIERARCHY / AUTOCOMPLETE LOGIC ---
+        // Filters the LOCATION_DB array based on text input and renders clickable suggestion divs.
+        function showSuggestions(val) {
+            const sugBox = document.getElementById('suggestionsBox');
+            sugBox.innerHTML = '';
+            if (!val) {
+                sugBox.classList.add('hidden');
+                return;
+            }
+            
+            // Limit to 15 matches, ignoring accents
+            const normVal = normalizeStr(val);
+            const matches = LOCATION_DB.filter(loc => normalizeStr(loc).includes(normVal)).slice(0, 15);
+            if (matches.length === 0) {
+                sugBox.classList.add('hidden');
+                return;
+            }
+
+            matches.forEach(match => {
+                const div = document.createElement('div');
+                div.className = "p-3 hover:bg-slate-100 cursor-pointer border-b border-slate-50 last:border-0 text-sm";
+                
+                // Highlight match ignoring accents
+                div.innerHTML = highlightMatch(match, val);
+                
+                // Use pointerdown to support both touch and mouse reliably before blur
+                div.onpointerdown = function(e) {
+                    e.preventDefault(); // Keep focus
+                    document.getElementById('locationSearch').value = match;
+                    sugBox.classList.add('hidden');
+                    addLocation(); // Auto-add to list
+                };
+                sugBox.appendChild(div);
+            });
+            sugBox.classList.remove('hidden');
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('pointerdown', function(e) {
+            const sugBox = document.getElementById('suggestionsBox');
+            const search = document.getElementById('locationSearch');
+            // If clicking outside the search input AND outside the suggestions box, hide it
+            if (e.target !== search && !sugBox.contains(e.target)) {
+                sugBox.classList.add('hidden');
+            }
+        });
+
+        // --- LANGUAGE TOGGLE (The Fix) ---
+        function setLanguage(lang) {
+            const en = document.querySelectorAll('.lang-en');
+            const es = document.querySelectorAll('.lang-es');
+            
+            // Buttons UI
+            document.getElementById('btn-en').className = lang === 'en' ? 'px-2 py-1 rounded-full bg-[#003DA5] text-white' : 'px-2 py-1 rounded-full text-slate-400';
+            document.getElementById('btn-es').className = lang === 'es' ? 'px-2 py-1 rounded-full bg-[#003DA5] text-white' : 'px-2 py-1 rounded-full text-slate-400';
+            
+            // Toggle Display
+            en.forEach(el => lang === 'en' ? el.classList.remove('hidden') : el.classList.add('hidden'));
+            es.forEach(el => lang === 'es' ? el.classList.remove('hidden') : el.classList.add('hidden'));
+
+            // Translate dynamic options
+            document.querySelectorAll('option[data-en]').forEach(opt => {
+                opt.innerText = lang === 'en' ? opt.getAttribute('data-en') : opt.getAttribute('data-es');
+            });
+
+            // UPDATE PLACEHOLDERS DYNAMICALLY
+            const placeholders = {
+                en: {
+                    prop: "Prop. Type",
+                    time: "Timeframe",
+                    search: "Search area (e.g. Rivas)"
+                },
+                es: {
+                    prop: "Tipo Prop.",
+                    time: "Plazo",
+                    search: "Buscar área (ej. Rivas)"
+                }
+            };
+
+            document.getElementById('opt-prop-placeholder').innerText = placeholders[lang].prop;
+            document.getElementById('opt-time-placeholder').innerText = placeholders[lang].time;
+            document.getElementById('locationSearch').placeholder = placeholders[lang].search;
+        }
+
+        function addMustHave() {
+            const input = document.getElementById('mustHaveInput');
+            const list = document.getElementById('mustHaveList');
+            if (!input.value.trim()) return;
+            const div = document.createElement('div');
+            div.className = "flex items-center justify-between p-3.5 bg-blue-50 border border-blue-100 rounded-2xl animate-fade shadow-sm";
+            div.innerHTML = `<span class="text-sm font-black text-blue-900 uppercase tracking-tight">● ${input.value}</span><button onclick="this.parentElement.remove()" class="text-slate-400 text-lg w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-trash-can"></i></button>`;
+            list.prepend(div);
+            input.value = "";
+        }
+        
+        function addLocation() {
+            const searchInput = document.getElementById('locationSearch');
+            const list = document.getElementById('locationList');
+            const val = searchInput.value.trim();
+            
+            if (!val) return; // Keep it simple, remove artificial length constraints
+            
+            // Allow adding without full path if custom, or exactly as formatted
+            const locString = val;
+            
+            const div = document.createElement('div');
+            div.className = "flex items-start justify-between p-3.5 bg-blue-50 border border-blue-100 rounded-2xl animate-fade shadow-sm";
+            div.innerHTML = `<span class="text-sm font-black text-blue-900 uppercase tracking-tight leading-tight pr-2">📍 ${locString}</span><button onclick="this.parentElement.remove()" class="text-slate-400 text-lg shrink-0 w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-trash-can"></i></button>`;
+            list.prepend(div);
+            
+            // Reset input
+            searchInput.value = '';
+            document.getElementById('suggestionsBox').classList.add('hidden');
+        }
+
+        function validateAndPost() {
+            let isValid = true;
+            // Removed tight `.validate` empty check on location Search since they might have added to the list instead.
+            // Check if there's at least one location added OR text in input
+            const locAdded = document.getElementById('locationList').children.length > 0;
+            const searchInput = document.getElementById('locationSearch');
+            if(!locAdded && !searchInput.value.trim()) {
+                searchInput.classList.add('field-error');
+                isValid = false;
+            } else {
+                searchInput.classList.remove('field-error');
+            }
+
+            document.querySelectorAll('.validate:not(#locationSearch)').forEach(i => {
+                if(!i.value || i.value.includes(".") || i.value.includes("Prop") || i.value.includes("Tipo")) { 
+                    i.classList.add('field-error'); 
+                    isValid = false; 
+                }
+                else { i.classList.remove('field-error'); }
+            });
+            
+            if (isValid) {
+                // Show modal instead of alert
+                document.getElementById('successModal').classList.remove('hidden');
+                document.getElementById('successModal').classList.add('flex');
+            }
+        }
+    </script>
+</body>
+</html>

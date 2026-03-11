@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Setup - NEXUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="locations.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .modal-blur { backdrop-filter: blur(8px); background-color: rgba(15, 23, 42, 0.9); }
+        .chip { transition: 0.2s; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: 700; }
+        .chip.active { background-color: #003DA5; color: white; border-color: #003DA5; }
+        .spec-card { transition: 0.2s; border: 2px solid #f1f5f9; background: #f8fafc; cursor: pointer; text-align: center; }
+        .spec-card.active { border-color: #003DA5; background-color: #eff6ff; color: #003DA5; transform: translateY(-2px); }
+        select:disabled { opacity: 0.5; background-color: #f1f5f9; }
+        .animate-fade { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans pb-24 text-slate-800">
+
+    <nav class="bg-white p-4 border-b sticky top-0 z-50 shadow-sm flex flex-col items-center justify-center gap-0">
+        <h1 class="font-black text-2xl text-[#003DA5] tracking-tighter uppercase italic leading-none">NEXUS - Identity Setup</h1>
+        <p class="text-[10px] uppercase tracking-widest text-[#ED1C24] font-bold mt-1">Powered by REMAX Altitud</p>
+    </nav>
+
+    <form class="p-4 space-y-6 max-w-lg mx-auto">
+        
+        <section class="bg-white p-6 rounded-[32px] border shadow-sm space-y-4">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Personal Identity</h3>
+            <div class="space-y-3">
+                <input type="text" placeholder="Full Name" class="w-full p-4 border border-slate-100 rounded-2xl bg-slate-50 font-bold outline-none text-xs">
+                <input type="email" placeholder="Business Email" class="w-full p-4 border border-slate-100 rounded-2xl bg-slate-50 font-bold outline-none text-xs">
+                <div class="relative">
+                    <i class="fa-brands fa-whatsapp absolute left-4 top-1/2 -translate-y-1/2 text-green-600"></i>
+                    <input type="tel" placeholder="WhatsApp Number" class="w-full pl-10 p-4 border border-slate-100 rounded-2xl bg-slate-50 font-bold text-green-700 outline-none text-xs">
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-[32px] border shadow-sm space-y-4">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agency & Performance</h3>
+            
+            <div class="grid grid-cols-1 gap-4">
+                <select onchange="checkAgency(this)" class="w-full p-4 border border-slate-100 rounded-2xl bg-slate-50 font-bold outline-none text-xs">
+                    <option value="REMAX">REMAX</option>
+                    <option value="Century 21">Century 21</option>
+                    <option value="Coldwell Banker">Coldwell Banker</option>
+                    <option value="Independent">Independent</option>
+                    <option value="Other">Other Agency...</option>
+                </select>
+                <input id="otherAgencyDiv" type="text" placeholder="Specify Agency Name" class="w-full p-4 border border-red-100 rounded-2xl bg-red-50 font-bold outline-none text-xs hidden">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[8px] font-black text-slate-400 uppercase mb-1 ml-2">Year Started</label>
+                        <input type="number" placeholder="2018" class="w-full p-4 border border-slate-100 rounded-2xl bg-slate-50 font-bold outline-none text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[8px] font-black text-slate-400 uppercase mb-1 ml-2">TX Closed Last Year</label>
+                        <select class="w-full p-4 border border-slate-100 rounded-2xl bg-slate-50 font-bold outline-none text-[10px] text-blue-600">
+                            <option>I was not in the business</option>
+                            <option>1-5</option>
+                            <option>6-15</option>
+                            <option>16-30</option>
+                            <option>31-50</option>
+                            <option>50+</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-[8px] font-black text-slate-400 uppercase mb-1 ml-2">Expected TX This Year</label>
+                    <input type="number" placeholder="20" class="w-full p-4 border border-blue-100 rounded-2xl bg-blue-50/30 font-bold outline-none text-xs text-blue-800 focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-[32px] border shadow-sm">
+            <div class="mb-4">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest lang-en">Expert Zones</h3>
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest lang-es hidden">Zonas de Experiencia</h3>
+                <p class="text-[11px] text-slate-400 font-medium italic lang-en">Select up to 3 districts you represent.</p>
+                <p class="text-[11px] text-slate-400 font-medium italic lang-es hidden">Selecciona hasta 3 distritos que representas.</p>
+            </div>
+            
+            <div class="space-y-3 relative">
+                <div class="relative w-full">
+                    <input type="text" id="locationSearch" oninput="showSuggestions(this.value)" autocomplete="off" placeholder="Search area (e.g. Rivas)" class="w-full p-4 border border-slate-100 rounded-2xl bg-slate-50 font-bold outline-none text-xs pl-12">
+                    <i class="fa-solid fa-map-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                    <!-- Dropdown suggestions container hidden by default -->
+                    <div id="suggestionsBox" class="absolute z-10 w-full bg-white border border-slate-200 mt-2 max-h-56 overflow-y-auto rounded-xl shadow-lg hidden hidden-scrollbar text-[12px] font-bold text-slate-700"></div>
+                </div>
+
+                <div class="pt-2 text-center">
+                    <a href="https://wa.me/50612345678?text=Hi! I would like to suggest a new location or project for NEXUS..." 
+                       target="_blank"
+                       class="text-[9px] font-bold text-slate-300 uppercase tracking-tight hover:text-blue-500 transition duration-200">
+                        <i class="fa-solid fa-map-location-dot mr-1"></i> Missing a location or project? Suggest it here
+                    </a>
+                </div>
+            </div>
+
+            <div id="selectedAreasContainer" class="flex flex-col gap-2 mt-4 min-h-[40px] border-t border-dashed pt-4">
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-[32px] border shadow-sm">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Specializations</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div onclick="this.classList.toggle('active')" class="spec-card p-4 rounded-2xl">
+                    <i class="fa-solid fa-house text-lg mb-2 block"></i>
+                    <span class="text-[9px] font-black uppercase">Residential</span>
+                </div>
+                <div onclick="this.classList.toggle('active')" class="spec-card p-4 rounded-2xl">
+                    <i class="fa-solid fa-building text-lg mb-2 block"></i>
+                    <span class="text-[9px] font-black uppercase">Commercial</span>
+                </div>
+                <div onclick="this.classList.toggle('active')" class="spec-card p-4 rounded-2xl">
+                    <i class="fa-solid fa-trowel-bricks text-lg mb-2 block"></i>
+                    <span class="text-[9px] font-black uppercase">Developers</span>
+                </div>
+                <div onclick="this.classList.toggle('active')" class="spec-card p-4 rounded-2xl">
+                    <i class="fa-solid fa-key text-lg mb-2 block"></i>
+                    <span class="text-[9px] font-black uppercase">Rentals</span>
+                </div>
+            </div>
+        </section>
+
+        <button type="button" onclick="openTerms()" class="w-full bg-[#003DA5] text-white py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-xl">
+            Review Code of Conduct
+        </button>
+
+    </form>
+
+    <div id="termsModal" class="fixed inset-0 z-[100] modal-blur hidden flex items-center justify-center p-6">
+        <div class="bg-white rounded-[40px] w-full max-w-md h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-[#003DA5] p-8 text-white text-center shrink-0">
+                <h2 class="text-3xl font-black italic mb-1 uppercase">The Nexus Code</h2>
+                <p class="text-[10px] font-bold uppercase opacity-60">REMAX Altitud Standards</p>
+            </div>
+            
+            <div class="p-8 overflow-y-auto space-y-6 text-sm text-slate-600 no-scrollbar">
+                <div>
+                    <h4 class="font-black text-slate-900 uppercase text-xs mb-1">1. Full-Time Pros Only</h4>
+                    <p class="text-xs italic text-slate-500">No "intermediarios." This must be your primary profession.</p>
+                </div>
+                <div class="border-t pt-4">
+                    <h4 class="font-black text-slate-900 uppercase text-xs mb-1">2. Direct Representation</h4>
+                    <p class="text-xs italic text-slate-500">You must directly represent the buyer or seller. No broker chains.</p>
+                </div>
+                <div class="border-t pt-4">
+                    <h4 class="font-black text-slate-900 uppercase text-xs mb-1">3. The 50/50 Rule</h4>
+                    <p class="text-xs italic text-slate-500">Collaboration assumes an equal commission split by default.</p>
+                </div>
+                <div class="border-t pt-4">
+                    <h4 class="font-black text-slate-900 uppercase text-xs mb-1">4. Ethical Collaboration</h4>
+                    <p class="text-xs italic text-slate-500">No circumvention. Do not contact colleagues' clients directly.</p>
+                </div>
+            </div>
+
+            <div class="p-8 border-t bg-slate-50 shrink-0">
+                <button onclick="window.location.href='index.html'" class="w-full bg-[#ED1C24] text-white py-5 rounded-3xl font-black text-xs uppercase shadow-xl tracking-widest">
+                    I AGREE & ENTER NEXUS
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LOCATION LOGIC ---
+        // Filters the LOCATION_DB array based on text input and renders clickable suggestion divs.
+        function showSuggestions(val) {
+            const sugBox = document.getElementById('suggestionsBox');
+            sugBox.innerHTML = '';
+            if (!val) {
+                sugBox.classList.add('hidden');
+                return;
+            }
+            
+            // Limit to 15 matches, ignoring accents
+            const normVal = normalizeStr(val);
+            const matches = LOCATION_DB.filter(loc => normalizeStr(loc).includes(normVal)).slice(0, 15);
+            if (matches.length === 0) {
+                sugBox.classList.add('hidden');
+                return;
+            }
+
+            matches.forEach(match => {
+                const div = document.createElement('div');
+                div.className = "p-3 hover:bg-slate-100 cursor-pointer border-b border-slate-50 last:border-0 text-sm";
+                
+                // Highlight match ignoring accents
+                div.innerHTML = highlightMatch(match, val);
+                
+                // Use pointerdown to support both touch and mouse reliably before blur
+                div.onpointerdown = function(e) {
+                    e.preventDefault(); // Keep focus
+                    document.getElementById('locationSearch').value = match;
+                    sugBox.classList.add('hidden');
+                    addSelectedArea(match); // Auto-add to list
+                };
+                sugBox.appendChild(div);
+            });
+            sugBox.classList.remove('hidden');
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('pointerdown', function(e) {
+            const sugBox = document.getElementById('suggestionsBox');
+            const search = document.getElementById('locationSearch');
+            if (sugBox && search && e.target !== search && !sugBox.contains(e.target)) {
+                sugBox.classList.add('hidden');
+            }
+        });
+
+        // --- MULTI-AREA CHIP LOGIC ---
+        let selectedAreas = [];
+
+        function addSelectedArea(areaString) {
+            if (!areaString) return;
+            
+            if (!selectedAreas.includes(areaString) && selectedAreas.length < 3) {
+                selectedAreas.push(areaString);
+                renderAreaChips();
+            } else if (selectedAreas.length >= 3) {
+                alert("Please limit your primary expertise to 3 zones.");
+            }
+            document.getElementById('locationSearch').value = '';
+        }
+
+        function renderAreaChips() {
+            const container = document.getElementById('selectedAreasContainer');
+            container.innerHTML = ''; 
+            selectedAreas.forEach((area, index) => {
+                container.innerHTML += `
+                    <div class="flex items-start justify-between p-3.5 bg-blue-50 border border-blue-100 rounded-xl animate-fade shadow-sm">
+                        <span class="text-xs font-black text-blue-900 uppercase tracking-tight leading-tight pr-2">📍 ${area}</span>
+                        <button type="button" onclick="removeArea(${index})" class="text-slate-400 text-lg shrink-0 w-8 h-8 flex items-center justify-center">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function removeArea(index) {
+            selectedAreas.splice(index, 1);
+            renderAreaChips();
+        }
+
+        function checkAgency(select) { document.getElementById('otherAgencyDiv').classList.toggle('hidden', select.value !== 'Other'); }
+        function openTerms() { document.getElementById('termsModal').classList.remove('hidden'); }
+    </script>
+</body>
+</html>

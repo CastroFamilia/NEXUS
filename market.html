@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Market Pulse - NEXUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="locations.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .gradient-blue { background: linear-gradient(135deg, #003DA5 0%, #002868 100%); }
+        .gradient-amber { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .map-bg { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .heat-point { animation: pulse-red 2s infinite; }
+        .premium-blur { filter: blur(6px); user-select: none; pointer-events: none; }
+        .bg-gold { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans pb-32 text-slate-800">
+
+    <nav class="bg-white border-b sticky top-0 z-50 px-4 py-4 shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-col items-start gap-0">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-3xl font-black text-[#003DA5] italic tracking-tighter uppercase lang-en leading-none">NEXUS - Market Pulse</h1>
+                    <h1 class="text-3xl font-black text-[#003DA5] italic tracking-tighter uppercase lang-es hidden leading-none">NEXUS - Pulso del Mercado</h1>
+                    <div class="bg-red-100 text-[#ED1C24] text-[8px] font-black px-2 py-1 rounded-full animate-pulse uppercase mt-0.5">Live Data</div>
+                </div>
+                <p class="text-[10px] uppercase tracking-widest text-[#ED1C24] font-bold mt-1">Powered by REMAX Altitud</p>
+            </div>
+            <div class="flex bg-slate-100 p-1 rounded-full text-[9px] font-black border">
+                <button onclick="setLanguage('en')" id="btn-en" class="px-2 py-1 rounded-full bg-[#003DA5] text-white">EN</button>
+                <button onclick="setLanguage('es')" id="btn-es" class="px-2 py-1 rounded-full text-slate-400">ES</button>
+            </div>
+        </div>
+        
+        <div class="relative w-full z-40">
+            <input type="text" id="locationSearch" oninput="showSuggestions(this.value)" autocomplete="off" placeholder="Search area (e.g. Uvita)" class="w-full p-4 border border-slate-100 rounded-2xl bg-slate-100 font-bold outline-none text-xs pl-11 shadow-inner focus:ring-2 focus:ring-blue-500 transition-all lang-en">
+            <input type="text" id="locationSearchEs" oninput="showSuggestions(this.value)" autocomplete="off" placeholder="Buscar zona (ej. Uvita)" class="w-full p-4 border border-slate-100 rounded-2xl bg-slate-100 font-bold outline-none text-xs pl-11 shadow-inner focus:ring-2 focus:ring-blue-500 transition-all lang-es hidden">
+            <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <div id="suggestionsBox" class="absolute z-50 w-full bg-white border border-slate-200 mt-2 max-h-56 overflow-y-auto rounded-xl shadow-2xl hidden hidden-scrollbar text-[12px] font-bold text-slate-700"></div>
+        </div>
+    </nav>
+
+    <div class="p-4 space-y-6 max-w-lg mx-auto">
+        
+        <div class="grid grid-cols-1 gap-4">
+            <section class="gradient-blue rounded-[32px] p-6 text-white shadow-xl relative overflow-hidden">
+                <i class="fa-solid fa-handshake absolute -bottom-4 -right-4 text-white/10 text-8xl"></i>
+                <h2 class="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1 lang-en">Closed via NEXUS</h2>
+                <h2 class="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1 lang-es hidden">Cerrado vía NEXUS</h2>
+                <div class="text-4xl font-black mb-1">$4,850,000</div>
+                <p class="text-[10px] font-bold uppercase opacity-80">14 Verified Collaborations</p>
+            </section>
+
+            <section class="gradient-amber rounded-[32px] p-6 text-white shadow-xl relative overflow-hidden">
+                <i class="fa-solid fa-file-signature absolute -bottom-4 -right-4 text-white/10 text-8xl"></i>
+                <h2 class="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1 lang-en">Active Pipeline</h2>
+                <h2 class="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1 lang-es hidden">En Negociación</h2>
+                <div class="text-4xl font-black mb-1">$2,120,000</div>
+                <p class="text-[10px] font-bold uppercase opacity-80">6 Deals Pending Closing</p>
+            </section>
+        </div>
+
+        <section class="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden">
+            <!-- PREMIUM OVERLAY -->
+            <div id="premiumOverlayMap" class="absolute inset-0 z-20 bg-white/40 flex flex-col items-center justify-center p-6 text-center backdrop-blur-sm">
+                <div class="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 text-2xl mb-4 border-2 border-amber-100 shadow-lg">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
+                <h3 class="text-sm font-black text-[#003DA5] uppercase tracking-widest mb-2 italic">Premium Insight</h3>
+                <p class="text-[10px] font-bold text-slate-500 mb-6 lang-en">Unlock exact Hot Zones and Buyer Demands by verifying your active REMAX Altitud CRM account.</p>
+                <p class="text-[10px] font-bold text-slate-500 mb-6 lang-es hidden">Desbloquea Zonas Calientes exactas y Demandas de Compradores verificando tu cuenta activa de CRM REMAX Altitud.</p>
+                
+                <button onclick="document.getElementById('remaxAuthModal').classList.remove('hidden')" class="bg-gold text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-2 transition-transform active:scale-95">
+                    <i class="fa-solid fa-link"></i>
+                    <span class="lang-en">Link REMAX Altitud Account</span>
+                    <span class="lang-es hidden">Vincular Cuenta REMAX Altitud</span>
+                </button>
+            </div>
+
+            <!-- PREMIUM CONTENT (Blurred by default) -->
+            <div id="premiumContentMap" class="premium-blur transition-all duration-700">
+                <div class="flex justify-between items-center mb-4 px-2">
+                    <h2 class="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+                        <i class="fa-solid fa-fire text-amber-500"></i>
+                        <span class="lang-en">Top Hot Zones</span>
+                        <span class="lang-es hidden">Mejores Zonas</span>
+                    </h2>
+                </div>
+
+                <div class="space-y-3 mb-6">
+                    <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+                        <div>
+                            <p class="text-xs font-black text-slate-800">1. Pérez Zeledón</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">San Isidro de El General</p>
+                        </div>
+                        <span class="bg-red-50 text-red-600 font-black text-[9px] px-2 py-1 rounded-lg uppercase">42 Active Buyers</span>
+                    </div>
+                    <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+                        <div>
+                            <p class="text-xs font-black text-slate-800">2. Escazú</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">San Rafael</p>
+                        </div>
+                        <span class="bg-red-50 text-red-600 font-black text-[9px] px-2 py-1 rounded-lg uppercase">28 Active Buyers</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-black text-slate-800">3. Puntarenas</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Bahía Ballena (Uvita)</p>
+                        </div>
+                        <span class="bg-red-50 text-red-600 font-black text-[9px] px-2 py-1 rounded-lg uppercase">19 Active Buyers</span>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-48 bg-slate-50 rounded-3xl overflow-hidden border map-bg">
+                    <div class="absolute top-1/2 left-1/4">
+                        <div class="w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-lg heat-point"></div>
+                        <span class="absolute top-5 -left-4 text-[7px] font-black bg-white px-2 py-0.5 rounded shadow-sm uppercase whitespace-nowrap">Pérez Zeledón</span>
+                    </div>
+                    <div class="absolute top-1/3 left-2/3">
+                        <div class="w-4 h-4 bg-red-600 rounded-full border-2 border-white shadow-lg heat-point" style="animation-delay: 0.5s;"></div>
+                        <span class="absolute top-5 -left-2 text-[7px] font-black bg-white px-2 py-0.5 rounded shadow-sm uppercase whitespace-nowrap">Escazú</span>
+                    </div>
+                    <div class="absolute bottom-1/4 left-1/2">
+                        <div class="w-4 h-4 bg-amber-500 rounded-full border-2 border-white shadow-lg heat-point" style="animation-delay: 1s;"></div>
+                        <span class="absolute top-5 -left-2 text-[7px] font-black bg-white px-2 py-0.5 rounded shadow-sm uppercase whitespace-nowrap">Uvita</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-slate-900 p-6 rounded-[32px] text-white shadow-xl relative overflow-hidden">
+            <!-- PREMIUM OVERLAY -->
+            <div id="premiumOverlayGaps" class="absolute inset-0 z-20 bg-slate-900/60 flex flex-col items-center justify-center p-6 text-center backdrop-blur-sm">
+                <h3 class="text-sm font-black text-amber-400 uppercase tracking-widest mb-2 italic">REMAX Altitud Exclusive</h3>
+                <p class="text-[10px] font-bold text-slate-300">Link your account above to view specific market gaps and upload your listings directly to waiting buyers.</p>
+            </div>
+
+            <!-- PREMIUM CONTENT -->
+            <div id="premiumContentGaps" class="premium-blur transition-all duration-700">
+                <h3 class="text-[10px] font-black opacity-40 uppercase tracking-widest mb-4 lang-en">Inventory Gaps (0 Listings Found)</h3>
+                <h3 class="text-[10px] font-black opacity-40 uppercase tracking-widest mb-4 lang-es hidden">Huecos de Inventario (0 Propiedades)</h3>
+                
+                <div class="space-y-4 mb-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-mountain-sun text-amber-400"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs font-black italic">Land/Fincas < $150k</p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase">Pérez Zeledón</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-black text-red-400">12 Buyers</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-house text-blue-400"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs font-black italic">House > 3 Beds (Rent)</p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase">Escazú / Santa Ana</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-black text-red-400">8 Buyers</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg lang-en">Upload Matching Listing</button>
+                <button class="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg lang-es hidden">Subir Propiedad Relacionada</button>
+            </div>
+        </section>
+
+        <section class="pb-10">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <h2 class="text-[10px] font-black uppercase text-slate-400 tracking-widest lang-en">Top Closers</h2>
+                <h2 class="text-[10px] font-black uppercase text-slate-400 tracking-widest lang-es hidden">Mejores Cerradores</h2>
+                <span class="text-[9px] font-bold text-blue-600 uppercase">March 2026</span>
+            </div>
+
+            <div class="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
+                <div class="flex items-center justify-between p-5 border-b border-slate-50 bg-amber-50/30">
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <div class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-white font-black border-2 border-amber-400">MR</div>
+                            <div class="absolute -top-2 -left-2 bg-amber-400 text-slate-900 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black shadow-md">1</div>
+                        </div>
+                        <div>
+                            <h4 class="font-black text-sm text-slate-800 leading-none mb-1">Maria Rodriguez</h4>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">REMAX Altitud</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-black text-slate-800">5 Deals</p>
+                        <p class="text-[8px] font-black text-amber-500 uppercase italic lang-en">🏆 Partner of the Month</p>
+                        <p class="text-[8px] font-black text-amber-500 uppercase italic lang-es hidden">🏆 Socio del Mes</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t py-4 px-8 flex justify-between items-center text-slate-400 z-50 shadow-xl">
+        <a href="index.html" class="flex flex-col items-center gap-1"><i class="fa-solid fa-magnifying-glass text-xl"></i><span class="text-[10px] font-black uppercase tracking-tighter">Feed</span></a>
+        <div class="flex flex-col items-center gap-1 text-[#003DA5]"><i class="fa-solid fa-chart-line text-xl"></i><span class="text-[10px] font-black uppercase tracking-tighter">Pulse</span></div>
+        <a href="network.html" class="flex flex-col items-center gap-1"><i class="fa-solid fa-users text-xl"></i><span class="text-[10px] font-black uppercase tracking-tighter">Network</span></a>
+        <a href="my-desk.html" class="flex flex-col items-center gap-1"><i class="fa-solid fa-briefcase text-xl"></i><span class="text-[10px] font-black uppercase tracking-tighter">Desk</span></a>
+    </div>
+
+    <!-- REMAX API AUTH MODAL -->
+    <div id="remaxAuthModal" class="fixed inset-0 z-[100] bg-slate-900/60 hidden flex-col items-center justify-center p-6 backdrop-blur-sm animate-fade">
+        <div class="bg-white rounded-[40px] p-8 max-w-sm w-full shadow-2xl relative">
+            <button onclick="document.getElementById('remaxAuthModal').classList.add('hidden')" class="absolute top-6 right-6 text-slate-400 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            
+            <div class="flex justify-center mb-6">
+                <!-- Using FontAwesome as placeholder for REMAX logo -->
+                <i class="fa-solid fa-balloon text-5xl text-[#ED1C24]"></i>
+            </div>
+            
+            <h2 class="text-2xl font-black text-center text-[#003DA5] mb-2 leading-tight tracking-tighter italic uppercase lang-en">Secure Link</h2>
+            <h2 class="text-2xl font-black text-center text-[#003DA5] mb-2 leading-tight tracking-tighter italic uppercase lang-es hidden">Enlace Seguro</h2>
+            
+            <p class="text-xs font-bold text-center text-slate-500 mb-8 lang-en">Please authenticate with your official REMAX Altitud CRM credentials to unlock Premium Nexus Analytics.</p>
+            <p class="text-xs font-bold text-center text-slate-500 mb-8 lang-es hidden">Por favor, autentíquese con sus credenciales oficiales de REMAX Altitud CRM para desbloquear la analítica Premium de Nexus.</p>
+            
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-2">REMAX Altitud Agent ID or Email</label>
+                    <input type="text" id="authEmail" class="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 font-bold outline-none text-xs focus:ring-2 focus:ring-[#003DA5]">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-2">REMAX Altitud Password</label>
+                    <input type="password" id="authPass" class="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 font-bold outline-none text-xs focus:ring-2 focus:ring-[#003DA5]">
+                </div>
+            </div>
+
+            <button type="button" onclick="unlockPremiumData()" class="w-full bg-[#ED1C24] text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
+                <i class="fa-solid fa-lock-open text-xs"></i>
+                <span class="lang-en">Authenticate API</span>
+                <span class="lang-es hidden">Autenticar API</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- PREMIUM UNLOCK MODAL -->
+    <div id="unlockSuccessModal" class="fixed inset-0 z-[110] bg-slate-900/60 hidden flex-col items-center justify-center p-6 backdrop-blur-sm animate-fade">
+        <div class="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center">
+            <div class="w-24 h-24 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-6 border-4 border-amber-100 shadow-inner">
+                <i class="fa-solid fa-crown text-5xl"></i>
+            </div>
+            <h2 class="text-3xl font-black text-slate-800 mb-3 leading-tight tracking-tighter italic uppercase">Unlocked!</h2>
+            <p class="text-sm font-bold text-slate-500 mb-8 leading-relaxed lang-en">Your REMAX Altitud agent data has been synced. Welcome to Nexus Premium.</p>
+            <p class="text-sm font-bold text-slate-500 mb-8 leading-relaxed lang-es hidden">Tus datos como agente de REMAX Altitud han sido sincronizados. Bienvenido a Nexus Premium.</p>
+            
+            <button onclick="document.getElementById('unlockSuccessModal').classList.add('hidden')" class="w-full bg-gold text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg active:scale-95 transition-transform">
+                Enter Dashboard
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- LOCATION LOGIC ---
+        function showSuggestions(val) {
+            const sugBox = document.getElementById('suggestionsBox');
+            sugBox.innerHTML = '';
+            if (!val) {
+                sugBox.classList.add('hidden');
+                return;
+            }
+            const normVal = normalizeStr(val);
+            const matches = LOCATION_DB.filter(loc => normalizeStr(loc).includes(normVal)).slice(0, 15);
+            if (matches.length === 0) {
+                sugBox.classList.add('hidden');
+                return;
+            }
+
+            matches.forEach(match => {
+                const div = document.createElement('div');
+                div.className = "p-3 hover:bg-slate-100 cursor-pointer border-b border-slate-50 last:border-0 text-sm";
+                div.innerHTML = highlightMatch(match, val);
+                
+                div.onpointerdown = function(e) {
+                    e.preventDefault();
+                    document.getElementById('locationSearch').value = match;
+                    document.getElementById('locationSearchEs').value = match;
+                    sugBox.classList.add('hidden');
+                    // In a real app we'd fetch data based on match here
+                };
+                sugBox.appendChild(div);
+            });
+            sugBox.classList.remove('hidden');
+        }
+
+        document.addEventListener('pointerdown', function(e) {
+            const sugBox = document.getElementById('suggestionsBox');
+            const searchEn = document.getElementById('locationSearch');
+            const searchEs = document.getElementById('locationSearchEs');
+            if (sugBox && e.target !== searchEn && e.target !== searchEs && !sugBox.contains(e.target)) {
+                sugBox.classList.add('hidden');
+            }
+        });
+
+        function setLanguage(lang) {
+            const en = document.querySelectorAll('.lang-en');
+            const es = document.querySelectorAll('.lang-es');
+            document.getElementById('btn-en').className = lang === 'en' ? 'px-2 py-1 rounded-full bg-[#003DA5] text-white' : 'px-2 py-1 rounded-full text-slate-400';
+            document.getElementById('btn-es').className = lang === 'es' ? 'px-2 py-1 rounded-full bg-[#003DA5] text-white' : 'px-2 py-1 rounded-full text-slate-400';
+            en.forEach(el => lang === 'en' ? el.classList.remove('hidden') : el.classList.add('hidden'));
+            es.forEach(el => lang === 'es' ? el.classList.remove('hidden') : el.classList.add('hidden'));
+            
+            const placeholders = {
+                en: "Explore Region...",
+                es: "Explorar Región..."
+            };
+            document.getElementById('pulse-prov-placeholder').innerText = placeholders[lang];
+        }
+
+        // UNLOCK SIMULATION
+        function unlockPremiumData() {
+            const em = document.getElementById('authEmail').value;
+            const ps = document.getElementById('authPass').value;
+            
+            if(!em || !ps) {
+                alert("Please enter REMAX Altitud API credentials.");
+                return;
+            }
+
+            // Hide auth modal
+            document.getElementById('remaxAuthModal').classList.add('hidden');
+            
+            // Unblur content
+            document.getElementById('premiumContentMap').classList.remove('premium-blur');
+            document.getElementById('premiumContentGaps').classList.remove('premium-blur');
+            
+            // Hide "Unlock" overlays
+            document.getElementById('premiumOverlayMap').style.opacity = '0';
+            document.getElementById('premiumOverlayGaps').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('premiumOverlayMap').classList.add('hidden');
+                document.getElementById('premiumOverlayGaps').classList.add('hidden');
+            }, 500);
+
+            // Show success crown
+            document.getElementById('unlockSuccessModal').classList.remove('hidden');
+            document.getElementById('unlockSuccessModal').classList.add('flex');
+        }
+    </script>
+</body>
+</html>
